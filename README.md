@@ -25,18 +25,18 @@ This implementation is based on:
 ```
 perm_groups_ada/
 ├── src/
-│   ├── permutations.ads      # Permutation type and basic operations (Version: 0.01)
+│   ├── permutations.ads      # Permutation type and basic operations (Version: 0.02)
 │   ├── permutations.adb      # Implementation of permutation operations (Version: 0.01)
-│   ├── sims_algorithm.ads    # Sims' algorithm specifications (Version: 0.01)
+│   ├── sims_algorithm.ads    # Sims' algorithm specifications (Version: 0.02)
 │   ├── sims_algorithm.adb    # Implementation of Aₖ(π) and Bₖ(π) algorithms (Version: 0.01)
-│   └── utils.ads/adb         # Utility functions for permutations (Version: 0.01)
+│   └── utils.ads/adb         # Utility functions for permutations (Version: 0.02)
 ├── tests/
 │   ├── test_sparse.adb       # Tests for sparse examples (Section 5) (Version: 0.01)
 │   ├── test_dense.adb        # Tests for dense examples (Section 6) (Version: 0.01)
 │   └── test_random.adb       # Tests with random permutations (Version: 0.01)
 ├── examples/
 │   └── knuth_examples.adb    # Examples from Knuth's paper (Version: 0.01)
-├── perm_groups.gpr           # GPRbuild project file (Version: 0.01)
+├── perm_groups.gpr           # GPRbuild project file (Version: 0.02)
 ├── gnatprove.config           # GNATPROVE configuration (Version: 0.01)
 └── README.md                 # This file (Version: 0.01)
 ```
