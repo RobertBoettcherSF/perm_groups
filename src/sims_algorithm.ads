@@ -5,7 +5,7 @@
 --                                                               --
 --  File: sims_algorithm.ads                                      --
 --  Description: Sims' algorithm for permutation groups            --
---  Version: 0.01                                               --
+--  Version: 0.02                                               --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --

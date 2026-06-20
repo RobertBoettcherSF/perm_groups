@@ -5,7 +5,7 @@
 --                                                               --
 --  File: permutations.ads                                        --
 --  Description: Permutation type and basic operations            --
---  Version: 0.01                                               --
+--  Version: 0.02                                               --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --

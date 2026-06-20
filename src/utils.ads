@@ -5,7 +5,7 @@
 --                                                               --
 --  File: utils.ads                                               --
 --  Description: Utility functions for permutation groups          --
---  Version: 0.01                                               --
+--  Version: 0.02                                               --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
