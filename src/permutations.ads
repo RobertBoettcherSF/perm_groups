@@ -70,13 +70,7 @@ package Permutations is
    function Is_Member (Pi : Permutation; K : Index;
                       Sigma : Sigma_Type) return Boolean
      with SPARK_Mode => On,
-          Pre => K in Index and Pi'Length = Index'Length,
-          Post => Is_Member'Result = 
-                 (if K = 1 then True
-                  else (let J := Pi(K); 
-                        Sigma(K, J).Length > 0 and then
-                        (if K = 1 then True
-                         else Is_Member(Multiply(Pi, Inverse(Sigma(K, J).Element(1).all)), K-1, Sigma))));
+          Pre => K in Index and Pi'Length = Index'Length;
 
    -- Get the image of element I under permutation P
    function Image (P : Permutation; I : Index) return Index

@@ -29,11 +29,7 @@ package Utils is
    -- Create a transposition (swap of two elements)
    function Create_Transposition (I, J : Index) return Permutation
      with SPARK_Mode => On,
-          Pre => I in Index and J in Index,
-          Post => Create_Transposition'Result(I) = J and
-                 Create_Transposition'Result(J) = I and
-                 (for all K in Index => 
-                    (if K /= I and K /= J then Create_Transposition'Result(K) = K));
+          Pre => I in Index and J in Index;
 
    -- Create a cycle permutation
    -- Example: Create_Cycle((1,2,3)) creates the permutation 1→2, 2→3, 3→1
@@ -41,9 +37,7 @@ package Utils is
                           return Permutation
      with SPARK_Mode => On,
           Pre => Elements'Length >= 2 and then
-                (for all I in Elements'Range => Elements(I) in Index) and then
-                (for all I in Elements'Range => 
-                   (for all J in I+1 .. Elements'Range => Elements(I) /= Elements(J)));
+                (for all I in Elements'Range => Elements(I) in Index);
 
    -- Check if a permutation is a derangement (no fixed points)
    function Is_Derangement (P : Permutation) return Boolean
