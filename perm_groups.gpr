@@ -34,44 +34,11 @@ project Perm_Groups is
       "-gnatwe",
       "-gnatW8",
       "-fstack-check",
-      "-O2"
+      "-O2",
+      "-gnatX",
+      "-gnatk",
+      "-gnatj1"
    );
-
-   -- SPARK specific options
-   package Compiler is
-      for Default_Switches ("Ada") use (
-         "-gnatX",  -- SPARK mode
-         "-gnatk",  -- Generate SPARK specific messages
-         "-gnatj1"  -- Enable assertions
-      );
-   end Compiler;
-
-   -- Build scenarios
-   type Build_Type is ("Debug", "Release", "SPARK");
-   Build_Mode : Build_Type := external ("BUILD_MODE", "Debug");
-
-   case Build_Mode is
-      when Debug =>
-         for Compiler_Options ("Ada") use (
-            "-g",
-            "-O0",
-            "-gnata",
-            "-gnatV"
-         );
-      when Release =>
-         for Compiler_Options ("Ada") use (
-            "-O3",
-            "-gnatn",
-            "-gnatN"
-         );
-      when SPARK =>
-         for Compiler_Options ("Ada") use (
-            "-gnatX",
-            "-gnatk",
-            "-gnatj1",
-            "-O0"
-         );
-   end case;
 
    -- Main executable for testing
    executable ("test_sparse") is
