@@ -4,7 +4,7 @@
 --                                                               --
 --  File: perm_groups.gpr                                         --
 --  Description: GPRbuild project file for permutation groups     --
---  Version: 0.02                                               --
+--  Version: 0.03                                               --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -43,22 +43,22 @@ project Perm_Groups is
    -- Main executable for testing
    executable ("test_sparse") is
       for Source_Files use ("tests/test_sparse.adb");
-      for Main use ("test_sparse.adb");
+      for Main use ("test_sparse");
    end test_sparse;
 
    executable ("test_dense") is
       for Source_Files use ("tests/test_dense.adb");
-      for Main use ("test_dense.adb");
+      for Main use ("test_dense");
    end test_dense;
 
    executable ("test_random") is
       for Source_Files use ("tests/test_random.adb");
-      for Main use ("test_random.adb");
+      for Main use ("test_random");
    end test_random;
 
    executable ("knuth_examples") is
       for Source_Files use ("examples/knuth_examples.adb");
-      for Main use ("knuth_examples.adb");
+      for Main use ("knuth_examples");
    end knuth_examples;
 
 end Perm_Groups;
