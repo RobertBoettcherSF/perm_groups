@@ -5,7 +5,7 @@
 --                                                               --
 --  File: permutations.adb                                        --
 --  Description: Complete implementation with all algorithms       --
---  Version: 0.03                                               --
+--  Version: 0.04                                               --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -68,7 +68,7 @@ package body Permutations is
          J : Index := Pi(K);
       begin
          -- If σₖⱼ is empty, Pi is not in the group
-         if Perm_Vectors.Length(Sigma(K, J)) = 0 then
+         if Length(Sigma(K, J)) = 0 then
             return False;
          end if;
          
@@ -94,7 +94,7 @@ package body Permutations is
                          T : in out T_Type) is
    begin
       -- Add Pi to T(K)
-      Perm_Vectors.Append(T(K), Pi);
+      Append(T(K), Pi);
       
       -- If K = 1, we're done (base case)
       if K = 1 then
@@ -103,14 +103,14 @@ package body Permutations is
       
       -- For all σ ∈ Σ(k) and τ ∈ T(k), check if στ is not already in Γ(k)
       for J in Index loop
-         if Perm_Vectors.Length(Sigma(K, J)) > 0 then
+         if Length(Sigma(K, J)) > 0 then
             declare
-               Sigma_KJ : Permutation := Perm_Vectors.Element(Sigma(K, J), 1);
+               Sigma_KJ : Permutation := Element(Sigma(K, J), 1);
             begin
                -- For each τ in T(K)
-               for Tau_Idx in 1 .. Perm_Vectors.Length(T(K)) loop
+               for Tau_Idx in 1 .. Length(T(K)) loop
                   declare
-                     Tau : Permutation := Perm_Vectors.Element(T(K), Tau_Idx);
+                     Tau : Permutation := Element(T(K), Tau_Idx);
                      Product : Permutation := Multiply(Sigma_KJ, Tau);
                   begin
                      -- Check if Product is not already in Γ(k)
@@ -125,9 +125,9 @@ package body Permutations is
       end loop;
       
       -- Also check products with the new Pi
-      for Tau_Idx in 1 .. Perm_Vectors.Length(T(K)) loop
+      for Tau_Idx in 1 .. Length(T(K)) loop
          declare
-            Tau : Permutation := Perm_Vectors.Element(T(K), Tau_Idx);
+            Tau : Permutation := Element(T(K), Tau_Idx);
             Product1 : Permutation := Multiply(Pi, Tau);
             Product2 : Permutation := Multiply(Tau, Pi);
          begin
@@ -151,8 +151,8 @@ package body Permutations is
          J : Index := Pi(K);
       begin
          -- If σₖⱼ is empty, set σₖⱼ ← π and terminate
-         if Perm_Vectors.Length(Sigma(K, J)) = 0 then
-            Perm_Vectors.Append(Sigma(K, J), Pi);
+         if Length(Sigma(K, J)) = 0 then
+            Append(Sigma(K, J), Pi);
             return;
          end if;
          
@@ -175,8 +175,8 @@ package body Permutations is
                
                -- After adding new generators, we may need to update σₖⱼ
                if not Is_Member(Pi, K, Sigma) then
-                  Perm_Vectors.Clear(Sigma(K, J));
-                  Perm_Vectors.Append(Sigma(K, J), Pi);
+                  Clear(Sigma(K, J));
+                  Append(Sigma(K, J), Pi);
                end if;
             end if;
          end;
@@ -188,13 +188,13 @@ package body Permutations is
    begin
       -- Initialize all T(k) to empty vectors
       for K in Index loop
-         Perm_Vectors.Clear(T(K));
+         Clear(T(K));
       end loop;
       
       -- Initialize all σₖⱼ to empty vectors
       for K in Index loop
          for J in Index loop
-            Perm_Vectors.Clear(Sigma(K, J));
+            Clear(Sigma(K, J));
          end loop;
       end loop;
    end Initialize;
@@ -207,7 +207,7 @@ package body Permutations is
    end Add_Generator;
 
    -- Compute the strong generating set for a given set of generators
-   procedure Compute_Strong_Generators (Generators : Perm_Vectors.Vector;
+   procedure Compute_Strong_Generators (Generators : Vector;
                                         Sigma : out Sigma_Type;
                                         T : out T_Type) is
    begin
@@ -215,8 +215,8 @@ package body Permutations is
       Initialize(Index'Last, Sigma, T);
       
       -- Add each generator to the group
-      for I in 1 .. Perm_Vectors.Length(Generators) loop
-         Add_Generator(Perm_Vectors.Element(Generators, I), Sigma, T);
+      for I in 1 .. Length(Generators) loop
+         Add_Generator(Element(Generators, I), Sigma, T);
       end loop;
    end Compute_Strong_Generators;
 
