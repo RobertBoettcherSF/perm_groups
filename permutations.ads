@@ -5,7 +5,7 @@
 --                                                               --
 --  File: permutations.ads                                        --
 --  Description: Complete implementation with all algorithms       --
---  Version: 0.04                                               --
+--  Version: 0.05                                               --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -55,6 +55,7 @@ package Permutations is
    package Perm_Vectors is new Ada.Containers.Vectors
      (Index_Type => Positive, Element_Type => Permutation);
    use Perm_Vectors;
+   use type Ada.Containers.Count_Type;
 
    -- Sigma type: array of vectors for each k and j
    type Sigma_Type is array (Index, Index) of Vector;
@@ -97,7 +98,7 @@ package Permutations is
                                         T : out T_Type)
      with SPARK_Mode => On,
           Pre => (for all I in 1 .. Length(Generators) => 
-                    Element(Generators, I)'Length = Max_Size);
+                    Element(Generators, Positive(I))'Length = Max_Size);
 
    -- Create a transposition (swap of two elements)
    function Create_Transposition (I, J : Index) return Permutation

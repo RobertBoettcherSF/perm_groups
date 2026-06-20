@@ -5,7 +5,7 @@
 --                                                               --
 --  File: permutations.adb                                        --
 --  Description: Complete implementation with all algorithms       --
---  Version: 0.04                                               --
+--  Version: 0.05                                               --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -15,6 +15,7 @@
 
 package body Permutations is
    pragma SPARK_Mode (On);
+   use type Ada.Containers.Count_Type;
 
    -- Identity permutation
    function Identity return Permutation is
@@ -79,7 +80,7 @@ package body Permutations is
          
          -- Recursively check if Pi * σₖⱼ⁻¹ is in Γ(k-1)
          declare
-            Sigma_KJ : Permutation := Sigma(K, J).Element(1).all;
+            Sigma_KJ : Permutation := Element(Sigma(K, J), 1);
             Sigma_KJ_Inv : Permutation := Inverse(Sigma_KJ);
             Pi_Transformed : Permutation := Multiply(Pi, Sigma_KJ_Inv);
          begin
@@ -108,9 +109,9 @@ package body Permutations is
                Sigma_KJ : Permutation := Element(Sigma(K, J), 1);
             begin
                -- For each τ in T(K)
-               for Tau_Idx in 1 .. Length(T(K)) loop
+               for Tau_Idx in 1 .. Positive(Length(T(K))) loop
                   declare
-                     Tau : Permutation := Element(T(K), Tau_Idx);
+                     Tau : Permutation := Element(T(K), Positive(Tau_Idx));
                      Product : Permutation := Multiply(Sigma_KJ, Tau);
                   begin
                      -- Check if Product is not already in Γ(k)
@@ -125,9 +126,9 @@ package body Permutations is
       end loop;
       
       -- Also check products with the new Pi
-      for Tau_Idx in 1 .. Length(T(K)) loop
+      for Tau_Idx in 1 .. Positive(Length(T(K))) loop
          declare
-            Tau : Permutation := Element(T(K), Tau_Idx);
+            Tau : Permutation := Element(T(K), Positive(Tau_Idx));
             Product1 : Permutation := Multiply(Pi, Tau);
             Product2 : Permutation := Multiply(Tau, Pi);
          begin
@@ -163,7 +164,7 @@ package body Permutations is
          
          -- Check if πσₖⱼ⁻¹ ∈ Γ(k-1)
          declare
-            Sigma_KJ : Permutation := Sigma(K, J).Element(1).all;
+            Sigma_KJ : Permutation := Element(Sigma(K, J), 1);
             Sigma_KJ_Inv : Permutation := Inverse(Sigma_KJ);
             Pi_Transformed : Permutation := Multiply(Pi, Sigma_KJ_Inv);
          begin
@@ -215,8 +216,8 @@ package body Permutations is
       Initialize(Index'Last, Sigma, T);
       
       -- Add each generator to the group
-      for I in 1 .. Length(Generators) loop
-         Add_Generator(Element(Generators, I), Sigma, T);
+      for I in 1 .. Positive(Length(Generators)) loop
+         Add_Generator(Element(Generators, Positive(I)), Sigma, T);
       end loop;
    end Compute_Strong_Generators;
 
