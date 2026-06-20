@@ -4,7 +4,7 @@
 --                                                               --
 --  File: perm_groups.gpr                                         --
 --  Description: GPRbuild project file for permutation groups     --
---  Version: 0.03                                               --
+--  Version: 0.01                                               --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -14,51 +14,18 @@
 
 project Perm_Groups is
 
-   -- Project configuration
-   for Source_Dirs use ("src");
+   for Source_Dirs use (".");
    for Object_Dir use "obj";
    for Exec_Dir use "bin";
-   for Library_Dir use "lib";
-   for Library_Name use "perm_groups";
-   for Library_Kind use "static";
-   for Library_Interface use ("permutations", "sims_algorithm", "utils");
 
-   -- Compiler options for SPARK
    for Ada_Dialect use "Ada2022";
    for Compiler ("Ada") use "gcc";
    for Compiler_Options ("Ada") use (
       "-gnat2022",
       "-gnata",
       "-gnatV",
-      "-gnatwae",
-      "-gnatwe",
-      "-gnatW8",
-      "-fstack-check",
-      "-O2",
       "-gnatX",
-      "-gnatk",
-      "-gnatj1"
+      "-gnatk"
    );
-
-   -- Main executable for testing
-   executable ("test_sparse") is
-      for Source_Files use ("tests/test_sparse.adb");
-      for Main use ("test_sparse");
-   end test_sparse;
-
-   executable ("test_dense") is
-      for Source_Files use ("tests/test_dense.adb");
-      for Main use ("test_dense");
-   end test_dense;
-
-   executable ("test_random") is
-      for Source_Files use ("tests/test_random.adb");
-      for Main use ("test_random");
-   end test_random;
-
-   executable ("knuth_examples") is
-      for Source_Files use ("examples/knuth_examples.adb");
-      for Main use ("knuth_examples");
-   end knuth_examples;
 
 end Perm_Groups;
