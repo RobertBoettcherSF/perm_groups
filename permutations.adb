@@ -5,7 +5,7 @@
 --                                                               --
 --  File: permutations.adb                                        --
 --  Description: Complete implementation with all algorithms       --
---  Version: 0.01                                               --
+--  Version: 0.02                                               --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -230,14 +230,14 @@ package body Permutations is
    end Create_Transposition;
 
    -- Create a cycle permutation
-   function Create_Cycle (Elements : array (Positive range <>) of Index) return Permutation is
+   function Create_Cycle (Elements : Cycle_Elements; Length : Positive) return Permutation is
    begin
       return Result : Permutation := Identity do
-         -- Create the cycle: Elements(1) -> Elements(2) -> ... -> Elements(N) -> Elements(1)
-         for K in Elements'First .. Elements'Last - 1 loop
+         -- Create the cycle: Elements(1) -> Elements(2) -> ... -> Elements(Length) -> Elements(1)
+         for K in 1 .. Length - 1 loop
             Result(Elements(K)) := Elements(K + 1);
          end loop;
-         Result(Elements(Elements'Last)) := Elements(Elements'First);
+         Result(Elements(Length)) := Elements(1);
       end return;
    end Create_Cycle;
 

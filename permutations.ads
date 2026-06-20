@@ -5,7 +5,7 @@
 --                                                               --
 --  File: permutations.ads                                        --
 --  Description: Complete implementation with all algorithms       --
---  Version: 0.01                                               --
+--  Version: 0.02                                               --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -104,10 +104,17 @@ package Permutations is
      with SPARK_Mode => On,
           Pre => I in Index and J in Index;
 
+   -- Maximum number of elements for cycle creation
+   Max_Cycle_Size : constant Positive := Max_Size;
+   
+   -- Type for cycle elements
+   type Cycle_Elements is array (Positive range 1 .. Max_Cycle_Size) of Index;
+   
    -- Create a cycle permutation
-   function Create_Cycle (Elements : array (Positive range <>) of Index) return Permutation
+   function Create_Cycle (Elements : Cycle_Elements; Length : Positive) return Permutation
      with SPARK_Mode => On,
-          Pre => Elements'Length >= 2 and then (for all I in Elements'Range => Elements(I) in Index);
+          Pre => Length >= 2 and Length <= Max_Cycle_Size and then
+                (for all I in 1 .. Length => Elements(I) in Index);
 
    -- Check if two permutations are equal
    function "=" (Left, Right : Permutation) return Boolean
