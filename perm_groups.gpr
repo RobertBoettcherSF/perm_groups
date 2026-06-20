@@ -4,7 +4,7 @@
 --                                                               --
 --  File: perm_groups.gpr                                         --
 --  Description: GPRbuild project file for permutation groups     --
---  Version: 0.01                                               --
+--  Version: 0.02                                               --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -18,14 +18,14 @@ project Perm_Groups is
    for Object_Dir use "obj";
    for Exec_Dir use "bin";
 
-   for Ada_Dialect use "Ada2022";
-   for Compiler ("Ada") use "gcc";
-   for Compiler_Options ("Ada") use (
-      "-gnat2022",
-      "-gnata",
-      "-gnatV",
-      "-gnatX",
-      "-gnatk"
-   );
+   package Compiler is
+      for Default_Switches ("Ada") use (
+         "-gnat2022",
+         "-gnata",
+         "-gnatV",
+         "-gnatX",
+         "-gnatk"
+      );
+   end Compiler;
 
 end Perm_Groups;
