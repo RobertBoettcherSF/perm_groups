@@ -5,7 +5,7 @@
 --                                                               --
 --  File: permutations.adb                                        --
 --  Description: Complete implementation with all algorithms       --
---  Version: 0.07                                               --
+--  Version: 0.08                                               --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -25,16 +25,16 @@ package body Permutations is
    -- Helper procedure to append to a Permutation_Vector
    procedure Vector_Append (V : in out Permutation_Vector; Item : Permutation) is
    begin
-      if V.Length < Max_Vector_Size then
+      if V.Length < Vector_Capacity(Max_Vector_Size) then
          V.Length := V.Length + 1;
-         V.Data(V.Length) := Item;
+         V.Data(Vector_Index(V.Length)) := Item;
       end if;
    end Vector_Append;
 
    -- Helper function to get element at index from Permutation_Vector
    function Vector_Element (V : Permutation_Vector; Index : Positive) return Permutation is
    begin
-      return V.Data(Index);
+      return V.Data(Vector_Index(Index));
    end Vector_Element;
 
    -- Helper procedure to clear a Permutation_Vector
@@ -135,9 +135,9 @@ package body Permutations is
                Sigma_KJ : Permutation := Vector_Element(Sigma(K, J), 1);
             begin
                -- For each τ in T(K)
-               for Tau_Idx in 1 .. Integer(Vector_Length(T(K))) loop
+               for Tau_Idx in 1 .. Vector_Capacity'Pos(Vector_Length(T(K))) loop
                   declare
-                     Tau : Permutation := Vector_Element(T(K), Tau_Idx);
+                     Tau : Permutation := Vector_Element(T(K), Positive(Tau_Idx));
                      Product : Permutation := Multiply(Sigma_KJ, Tau);
                   begin
                      -- Check if Product is not already in Γ(k)
@@ -152,9 +152,9 @@ package body Permutations is
       end loop;
       
       -- Also check products with the new Pi
-      for Tau_Idx in 1 .. Integer(Vector_Length(T(K))) loop
+      for Tau_Idx in 1 .. Vector_Capacity'Pos(Vector_Length(T(K))) loop
          declare
-            Tau : Permutation := Vector_Element(T(K), Tau_Idx);
+            Tau : Permutation := Vector_Element(T(K), Positive(Tau_Idx));
             Product1 : Permutation := Multiply(Pi, Tau);
             Product2 : Permutation := Multiply(Tau, Pi);
          begin

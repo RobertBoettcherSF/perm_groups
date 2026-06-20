@@ -5,7 +5,7 @@
 --                                                               --
 --  File: permutations.ads                                        --
 --  Description: Complete implementation with all algorithms       --
---  Version: 0.07                                               --
+--  Version: 0.08                                               --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -53,9 +53,10 @@ package Permutations is
           Post => Is_Identity'Result = (for all I in Index => P(I) = I);
 
    -- SPARK-compatible Vector type for storing permutations
+   type Vector_Index is range 1 .. Max_Vector_Size;
    type Vector_Capacity is range 0 .. Max_Vector_Size;
    
-   type Permutation_Array is array (1 .. Max_Vector_Size) of Permutation;
+   type Permutation_Array is array (Vector_Index) of Permutation;
    
    type Permutation_Vector is record
       Length : Vector_Capacity := 0;
