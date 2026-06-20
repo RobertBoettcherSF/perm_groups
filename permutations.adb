@@ -5,7 +5,7 @@
 --                                                               --
 --  File: permutations.adb                                        --
 --  Description: Complete implementation with all algorithms       --
---  Version: 0.08                                               --
+--  Version: 0.09                                               --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -45,32 +45,32 @@ package body Permutations is
 
    -- Identity permutation
    function Identity return Permutation is
+      Result : Permutation;
    begin
-      return Result : Permutation do
-         for I in Index loop
-            Result(I) := I;
-         end loop;
-      end return;
+      for I in Index loop
+         Result(I) := I;
+      end loop;
+      return Result;
    end Identity;
 
    -- Permutation multiplication (composition)
    function Multiply (Left, Right : Permutation) return Permutation is
+      Result : Permutation;
    begin
-      return Result : Permutation do
-         for I in Index loop
-            Result(I) := Left(Right(I));
-         end loop;
-      end return;
+      for I in Index loop
+         Result(I) := Left(Right(I));
+      end loop;
+      return Result;
    end Multiply;
 
    -- Permutation inverse
    function Inverse (P : Permutation) return Permutation is
+      Result : Permutation;
    begin
-      return Result : Permutation do
-         for I in Index loop
-            Result(P(I)) := I;
-         end loop;
-      end return;
+      for I in Index loop
+         Result(P(I)) := I;
+      end loop;
+      return Result;
    end Inverse;
 
    -- Check if a permutation is the identity
@@ -97,11 +97,6 @@ package body Permutations is
          -- If σₖⱼ is empty, Pi is not in the group
          if Vector_Length(Sigma(K, J)) = 0 then
             return False;
-         end if;
-         
-         -- If K = 1, we're done (base case)
-         if K = 1 then
-            return True;
          end if;
          
          -- Recursively check if Pi * σₖⱼ⁻¹ is in Γ(k-1)
@@ -136,6 +131,7 @@ package body Permutations is
             begin
                -- For each τ in T(K)
                for Tau_Idx in 1 .. Vector_Capacity'Pos(Vector_Length(T(K))) loop
+                  pragma Loop_Invariant (Tau_Idx >= 1 and Tau_Idx <= Vector_Capacity'Pos(Vector_Length(T(K))));
                   declare
                      Tau : Permutation := Vector_Element(T(K), Positive(Tau_Idx));
                      Product : Permutation := Multiply(Sigma_KJ, Tau);
@@ -153,6 +149,7 @@ package body Permutations is
       
       -- Also check products with the new Pi
       for Tau_Idx in 1 .. Vector_Capacity'Pos(Vector_Length(T(K))) loop
+         pragma Loop_Invariant (Tau_Idx >= 1 and Tau_Idx <= Vector_Capacity'Pos(Vector_Length(T(K))));
          declare
             Tau : Permutation := Vector_Element(T(K), Positive(Tau_Idx));
             Product1 : Permutation := Multiply(Pi, Tau);
@@ -215,12 +212,16 @@ package body Permutations is
    begin
       -- Initialize all T(k) to empty vectors
       for K in Index loop
+         pragma Loop_Invariant (for all I in Index'First .. K-1 => Vector_Length(T(I)) = 0);
          Vector_Clear(T(K));
       end loop;
       
       -- Initialize all σₖⱼ to empty vectors
       for K in Index loop
+         pragma Loop_Invariant (for all I in Index'First .. K-1 => 
+                                (for all J in Index => Vector_Length(Sigma(I, J)) = 0));
          for J in Index loop
+            pragma Loop_Invariant (for all J2 in Index'First .. J-1 => Vector_Length(Sigma(K, J2)) = 0);
             Vector_Clear(Sigma(K, J));
          end loop;
       end loop;
@@ -243,35 +244,39 @@ package body Permutations is
       
       -- Add each generator to the group
       for I in Generators'Range loop
+         pragma Loop_Invariant (for all J in Generators'First .. I-1 => 
+                                Is_Member(Generators(J), Index'Last, Sigma));
          Add_Generator(Generators(I), Sigma, T);
       end loop;
    end Compute_Strong_Generators;
 
    -- Create a transposition (swap of two elements)
    function Create_Transposition (I, J : Index) return Permutation is
+      Result : Permutation := Identity;
    begin
-      return Result : Permutation := Identity do
-         Result(I) := J;
-         Result(J) := I;
-      end return;
+      Result(I) := J;
+      Result(J) := I;
+      return Result;
    end Create_Transposition;
 
    -- Create a cycle permutation
    function Create_Cycle (Elements : Cycle_Elements; Length : Positive) return Permutation is
+      Result : Permutation := Identity;
    begin
-      return Result : Permutation := Identity do
-         -- Create the cycle: Elements(1) -> Elements(2) -> ... -> Elements(Length) -> Elements(1)
-         for K in 1 .. Length - 1 loop
-            Result(Elements(K)) := Elements(K + 1);
-         end loop;
-         Result(Elements(Length)) := Elements(1);
-      end return;
+      -- Create the cycle: Elements(1) -> Elements(2) -> ... -> Elements(Length) -> Elements(1)
+      for K in 1 .. Length - 1 loop
+         pragma Loop_Invariant (K >= 1 and K < Length);
+         Result(Elements(K)) := Elements(K + 1);
+      end loop;
+      Result(Elements(Length)) := Elements(1);
+      return Result;
    end Create_Cycle;
 
    -- Check if two permutations are equal
    function "=" (Left, Right : Permutation) return Boolean is
    begin
       for I in Index loop
+         pragma Loop_Invariant (for all J in Index'First .. I-1 => Left(J) = Right(J));
          if Left(I) /= Right(I) then
             return False;
          end if;
