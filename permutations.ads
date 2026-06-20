@@ -5,7 +5,7 @@
 --                                                               --
 --  File: permutations.ads                                        --
 --  Description: Complete implementation with all algorithms       --
---  Version: 0.02                                               --
+--  Version: 0.03                                               --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -51,11 +51,11 @@ package Permutations is
           Pre => True,
           Post => Is_Identity'Result = (for all I in Index => P(I) = I);
 
-   -- Vector type for storing permutations
-   type Perm_Vector is new Ada.Containers.Vectors.Vector with private;
-
    -- Access type for permutation elements in vectors
    type Element_Access is access all Permutation;
+
+   -- Vector type for storing permutations
+   type Perm_Vector is new Ada.Containers.Vectors.Vector with private;
 
    -- Sigma type: array of permutation vectors for each k and j
    type Sigma_Type is array (Index, Index) of Perm_Vector;
@@ -113,7 +113,7 @@ package Permutations is
    -- Create a cycle permutation
    function Create_Cycle (Elements : Cycle_Elements; Length : Positive) return Permutation
      with SPARK_Mode => On,
-          Pre => Length >= 2 and Length <= Max_Cycle_Size and then
+          Pre => Length >= 2 and Length <= Max_Cycle_Size and
                 (for all I in 1 .. Length => Elements(I) in Index);
 
    -- Check if two permutations are equal
