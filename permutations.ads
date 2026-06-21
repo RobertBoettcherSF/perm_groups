@@ -7,7 +7,7 @@
 --  File: permutations.ads                                        --
 --  Description: Complete implementation with Sims Filter/Sift      --
 --               and Enter algorithms                             --
---  Version: 0.17                                              --
+--  Version: 0.18                                              --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -113,7 +113,7 @@ package Permutations is
    
    procedure Enter_Helper (Pi : Permutation; Sigma : in out Sigma_Type; Count : Integer)
      with SPARK_Mode => On,
-          Pre => Pi'Length = Max_Size and Count >= 0 and Count < Max_Count,
+          Pre => Pi'Length = Max_Size and Count >= 0 and Count <= Max_Count,
           Subprogram_Variant => (Decreases => Max_Count - Count);
 
    -- Initialize the transversal system

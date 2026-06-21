@@ -7,7 +7,7 @@
 --  File: permutations.adb                                        --
 --  Description: Complete implementation with Sims Filter/Sift      --
 --               and Enter algorithms                             --
---  Version: 0.17                                              --
+--  Version: 0.18                                              --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -150,6 +150,11 @@ package body Permutations is
       J : Index;
       Next_Count : Integer;
    begin
+      -- Base case: if count has reached the maximum, terminate
+      if Count >= Max_Count then
+         return;
+      end if;
+
       -- Sift the permutation
       Result := Sift(Pi, Sigma);
 
@@ -168,7 +173,7 @@ package body Permutations is
 
       -- Closure step: for every existing non-empty σₓᵢ, form products
       -- σₖⱼ ∘ σₓᵢ and σₓᵢ ∘ σₖⱼ, and recursively call Enter on those products
-      -- Count + 1 is at most Max_Count because Count < Max_Count (from precondition)
+      -- Count + 1 is at most Max_Count because Count < Max_Count (from the check above)
       Next_Count := Count + 1;
       
       for X in Index loop
