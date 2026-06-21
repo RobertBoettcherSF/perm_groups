@@ -15,9 +15,6 @@
 --             1991 (unpublished paper)                             --
 ------------------------------------------------------------------
 
-with Standard;
-use type Standard.Natural;
-
 package Permutations is
    pragma SPARK_Mode (On);
 
@@ -113,9 +110,9 @@ package Permutations is
    -- Helper procedure for Enter to enable Subprogram_Variant
    -- Uses Depth as the variant measure to prove termination
    -- Depth is bounded by Max_Size * Max_Size to prevent infinite recursion
-   procedure Enter_Helper (Pi : Permutation; Sigma : in out Sigma_Type; Depth : Natural)
+   procedure Enter_Helper (Pi : Permutation; Sigma : in out Sigma_Type; Depth : Integer)
      with SPARK_Mode => On,
-          Pre => Pi'Length = Max_Size and Depth <= Natural(Max_Size * Max_Size),
+          Pre => Pi'Length = Max_Size and Depth >= 0 and Depth <= Max_Size * Max_Size,
           Subprogram_Variant => (Decreases => Depth);
 
    -- Initialize the transversal system

@@ -15,9 +15,6 @@
 --             1991 (unpublished paper)                             --
 ------------------------------------------------------------------
 
-with Standard;
-use type Standard.Natural;
-
 package body Permutations is
    pragma SPARK_Mode (On);
 
@@ -132,13 +129,13 @@ package body Permutations is
 
    -- Helper procedure for Enter to enable Subprogram_Variant
    -- This implements the closure step with a depth counter for termination proof
-   procedure Enter_Helper (Pi : Permutation; Sigma : in out Sigma_Type; Depth : Natural) is
+   procedure Enter_Helper (Pi : Permutation; Sigma : in out Sigma_Type; Depth : Integer) is
       Result : Sift_Result;
       K : Index;
       J : Index;
    begin
       -- Base case: if depth is too high, terminate (safety net)
-      if Depth > Natural(Max_Size * Max_Size) then
+      if Depth > Max_Size * Max_Size then
          return;
       end if;
 
