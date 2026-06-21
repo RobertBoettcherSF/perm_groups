@@ -7,7 +7,7 @@
 --  File: permutations.adb                                        --
 --  Description: Complete implementation with Sims Filter/Sift      --
 --               and Enter algorithms                             --
---  Version: 0.16                                              --
+--  Version: 0.17                                              --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -43,7 +43,7 @@ package body Permutations is
    -- Permutation inverse: computes the inverse bijection
    -- For a permutation P, Inverse(P) satisfies: P(Inverse(P)(I)) = I
    function Inverse (P : Permutation) return Permutation is
-      Result : Permutation;
+      Result : Permutation := Identity;
    begin
       for I in Index loop
          Result(P(I)) := I;
@@ -176,10 +176,12 @@ package body Permutations is
                                 (for all Y in Index => 
                                    (if Sigma(I, Y).Is_Present then 
                                       Sigma(I, Y).Value'Length = Max_Size)));
+         pragma Loop_Invariant (Next_Count = Count + 1 and Next_Count <= Max_Count);
          for Y in Index loop
             pragma Loop_Invariant (for all Y2 in Index'First .. Y-1 => 
                                    (if Sigma(X, Y2).Is_Present then 
                                       Sigma(X, Y2).Value'Length = Max_Size));
+            pragma Loop_Invariant (Next_Count = Count + 1 and Next_Count <= Max_Count);
             
             if Sigma(X, Y).Is_Present then
                -- Form product: σₖⱼ ∘ σₓᵢ
