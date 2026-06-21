@@ -4,26 +4,42 @@
 --                                                               --
 --  File: perm_groups.gpr                                         --
 --  Description: GPRbuild project file for permutation groups     --
---  Version: 0.04                                               --
+--  Version: 0.10                                              --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
 --  Reference: Knuth, D.E. "The Art of Computer Programming"     --
---             Volume 2, Section 4.6.3                            --
+--             Volume 2, Section 4.6.3 (Semi-invariants of a group)  --
+--                                                               --
+--  This project file configures the compilation and verification    --
+--  of the permutation groups implementation using GNATPROVE.        --
 ------------------------------------------------------------------
 
 project Perm_Groups is
 
+   -- Source directory: current directory (contains .ads and .adb files)
    for Source_Dirs use (".");
+   
+   -- Output directories for object files and executables
    for Object_Dir use "obj";
    for Exec_Dir use "bin";
 
+   -- Compiler configuration for Ada/SPARK
    package Compiler is
       for Default_Switches ("Ada") use (
-         "-gnat2022",
-         "-gnata",
-         "-gnatX"
+         "-gnat2022",    -- Ada 2022 standard
+         "-gnata",       -- Enable assertions
+         "-gnatX"        -- Enable SPARK mode
       );
    end Compiler;
+
+   -- GNATPROVE configuration (optional, can be overridden via command line)
+   -- To use these settings, run: gnatprove -P perm_groups.gpr
+   package Proof is
+      for Switches use (
+         "--level=4",     -- Maximum verification level
+         "--no-inlining"  -- Disable inlining for better proof
+      );
+   end Proof;
 
 end Perm_Groups;
