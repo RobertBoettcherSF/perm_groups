@@ -7,7 +7,7 @@
 --  File: permutations.ads                                        --
 --  Description: Complete implementation with Sims Filter/Sift      --
 --               and Enter algorithms                             --
---  Version: 0.13                                              --
+--  Version: 0.14                                              --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -107,12 +107,12 @@ package Permutations is
           Pre => Pi'Length = Max_Size;
 
    -- Helper procedure for Enter to enable Subprogram_Variant
-   -- Uses Depth as the variant measure to prove termination
-   -- Depth is bounded by Max_Size * Max_Size to prevent infinite recursion
-   procedure Enter_Helper (Pi : Permutation; Sigma : in out Sigma_Type; Depth : Integer)
+   -- Uses Count as the variant measure to prove termination
+   -- Count is bounded by Max_Size * Max_Size to prevent infinite recursion
+   procedure Enter_Helper (Pi : Permutation; Sigma : in out Sigma_Type; Count : Integer)
      with SPARK_Mode => On,
-          Pre => Pi'Length = Max_Size and Depth >= 0 and Depth <= Max_Size * Max_Size,
-          Subprogram_Variant => (Decreases => Depth);
+          Pre => Pi'Length = Max_Size and Count >= 0 and Count <= Max_Size * Max_Size,
+          Subprogram_Variant => (Decreases => Count);
 
    -- Initialize the transversal system
    -- Sets σₖₖ to the identity for all k, and all other σₖⱼ to empty

@@ -7,7 +7,7 @@
 --  File: permutations.adb                                        --
 --  Description: Complete implementation with Sims Filter/Sift      --
 --               and Enter algorithms                             --
---  Version: 0.13                                              --
+--  Version: 0.14                                              --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -68,14 +68,12 @@ package body Permutations is
    -- This implements the core Sift algorithm with a decreasing level parameter
    -- that SPARK can use to prove termination
    function Sift_Helper (Pi : Permutation; Sigma : Sigma_Type; Current_Level : Index) return Sift_Result is
-      Result : Sift_Result := (Perm => Pi, Level => 1);
       K : Index;
       J : Index;
    begin
       -- Base case: if we've checked all levels down to 1
       if Current_Level = 1 then
-         Result := (Perm => Pi, Level => 1);
-         return Result;
+         return (Perm => Pi, Level => 1);
       end if;
 
       -- Find the largest k ≤ Current_Level such that π(k) ≠ k
@@ -89,8 +87,7 @@ package body Permutations is
 
       -- If no such k found (π is identity on 1..Current_Level)
       if K < 1 then
-         Result := (Perm => Pi, Level => 1);
-         return Result;
+         return (Perm => Pi, Level => 1);
       end if;
 
       -- Now we have K where Pi(K) ≠ K and K >= 1
@@ -103,18 +100,17 @@ package body Permutations is
          declare
             Sigma_KJ_Inv : Permutation := Inverse(Sigma(K, J).Value);
             New_Pi : Permutation := Multiply(Pi, Sigma_KJ_Inv);
-            Next_Level : constant Index := K - 1;
          begin
             -- Recursively sift the new permutation at level K-1
-            -- K >= 2 here because if K = 1, we would have Pi(1) = 1 (from the loop condition)
-            -- but we know Pi(K) /= K, so K cannot be 1 at this point
-            Result := Sift_Helper(New_Pi, Sigma, Next_Level);
-            return Result;
+            -- We know K >= 2 here because:
+            -- - If K = 1, the loop would have continued (since Pi(1) = 1 for identity)
+            -- - But we exited the loop with Pi(K) /= K, so K cannot be 1
+            -- Therefore K - 1 >= 1 is guaranteed
+            return Sift_Helper(New_Pi, Sigma, K - 1);
          end;
       else
          -- σₖⱼ is empty, return current π and level K
-         Result := (Perm => Pi, Level => K);
-         return Result;
+         return (Perm => Pi, Level => K);
       end if;
    end Sift_Helper;
 
@@ -129,19 +125,18 @@ package body Permutations is
    end Sift;
 
    -- Helper procedure for Enter to enable Subprogram_Variant
-   -- This implements the closure step with a depth counter for termination proof
-   -- Depth is bounded by Max_Size * Max_Size to prevent infinite recursion
-   procedure Enter_Helper (Pi : Permutation; Sigma : in out Sigma_Type; Depth : Integer) is
+   -- This implements the closure step with a counter for the number of transversals
+   -- Uses Count as the variant measure to prove termination
+   procedure Enter_Helper (Pi : Permutation; Sigma : in out Sigma_Type; Count : Integer) is
       Result : Sift_Result;
       K : Index;
       J : Index;
-      Max_Depth : constant Integer := Max_Size * Max_Size;
-      Next_Depth : Integer;
+      Max_Count : constant Integer := Max_Size * Max_Size;
    begin
-      -- Base case: if depth is too high, terminate (safety net)
-      -- This bound ensures termination: each Enter call increases Depth by 1,
-      -- and there are at most Max_Size * Max_Size possible transversals
-      if Depth >= Max_Depth then
+      -- Base case: if count is too high, terminate (safety net)
+      -- This bound ensures termination: each Enter call that adds a new transversal
+      -- increases Count by 1, and there are at most Max_Size * Max_Size possible transversals
+      if Count >= Max_Count then
          return;
       end if;
 
@@ -163,11 +158,7 @@ package body Permutations is
 
       -- Closure step: for every existing non-empty σₓᵢ, form products
       -- σₖⱼ ∘ σₓᵢ and σₓᵢ ∘ σₖⱼ, and recursively call Enter on those products
-      -- Depth + 1 is at most Max_Depth because Depth < Max_Depth
-      Next_Depth := Depth + 1;
-      -- Next_Depth <= Max_Depth because Depth < Max_Depth (from the if condition above)
-      pragma Assert (Next_Depth <= Max_Depth);
-      
+      -- Count + 1 is at most Max_Count because Count < Max_Count
       for X in Index loop
          pragma Loop_Invariant (for all I in Index'First .. X-1 => 
                                 (for all Y in Index => 
@@ -183,14 +174,14 @@ package body Permutations is
                declare
                   Product1 : Permutation := Multiply(Sigma(K, J).Value, Sigma(X, Y).Value);
                begin
-                  Enter_Helper(Product1, Sigma, Next_Depth);
+                  Enter_Helper(Product1, Sigma, Count + 1);
                end;
 
                -- Form product: σₓᵢ ∘ σₖⱼ
                declare
                   Product2 : Permutation := Multiply(Sigma(X, Y).Value, Sigma(K, J).Value);
                begin
-                  Enter_Helper(Product2, Sigma, Next_Depth);
+                  Enter_Helper(Product2, Sigma, Count + 1);
                end;
             end if;
          end loop;
@@ -206,7 +197,7 @@ package body Permutations is
    -- σₖⱼ ∘ σₓᵢ and σₓᵢ ∘ σₖⱼ, and recursively calls Enter on those products
    procedure Enter (Pi : Permutation; Sigma : in out Sigma_Type) is
    begin
-      -- Start with depth 0 (bounded by Max_Size * Max_Size)
+      -- Start with count 0 (bounded by Max_Size * Max_Size)
       Enter_Helper(Pi, Sigma, 0);
    end Enter;
 
