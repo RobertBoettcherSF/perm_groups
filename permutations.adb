@@ -7,7 +7,7 @@
 --  File: permutations.adb                                        --
 --  Description: Complete implementation with Sims Filter/Sift      --
 --               and Enter algorithms                             --
---  Version: 0.14                                              --
+--  Version: 0.15                                              --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -70,24 +70,33 @@ package body Permutations is
    function Sift_Helper (Pi : Permutation; Sigma : Sigma_Type; Current_Level : Index) return Sift_Result is
       K : Index;
       J : Index;
+      Next_Level : Index;
+      Result : Sift_Result;
    begin
       -- Base case: if we've checked all levels down to 1
       if Current_Level = 1 then
-         return (Perm => Pi, Level => 1);
+         Result := (Perm => Pi, Level => 1);
+         return Result;
       end if;
 
       -- Find the largest k ≤ Current_Level such that π(k) ≠ k
       K := Current_Level;
-      while K >= 1 and then Pi(K) = K loop
-         pragma Loop_Invariant (K >= 1 and K <= Current_Level);
+      while K > 1 and then Pi(K) = K loop
+         pragma Loop_Invariant (K > 1 and K <= Current_Level);
          pragma Loop_Invariant (for all I in K+1 .. Current_Level => Pi(I) = I);
          pragma Loop_Variant (Decreases => K);
          K := K - 1;
       end loop;
+      
+      -- After the loop, check if K = 1 separately
+      if K = 1 and then Pi(1) = 1 then
+         K := 0;  -- Mark as not found
+      end if;
 
       -- If no such k found (π is identity on 1..Current_Level)
       if K < 1 then
-         return (Perm => Pi, Level => 1);
+         Result := (Perm => Pi, Level => 1);
+         return Result;
       end if;
 
       -- Now we have K where Pi(K) ≠ K and K >= 1
@@ -102,15 +111,20 @@ package body Permutations is
             New_Pi : Permutation := Multiply(Pi, Sigma_KJ_Inv);
          begin
             -- Recursively sift the new permutation at level K-1
-            -- We know K >= 2 here because:
-            -- - If K = 1, the loop would have continued (since Pi(1) = 1 for identity)
-            -- - But we exited the loop with Pi(K) /= K, so K cannot be 1
-            -- Therefore K - 1 >= 1 is guaranteed
-            return Sift_Helper(New_Pi, Sigma, K - 1);
+            -- If K = 1, we cannot go lower, so just return the new permutation
+            if K = 1 then
+               Result := (Perm => New_Pi, Level => 1);
+               return Result;
+            else
+               Next_Level := K - 1;
+               Result := Sift_Helper(New_Pi, Sigma, Next_Level);
+               return Result;
+            end if;
          end;
       else
          -- σₖⱼ is empty, return current π and level K
-         return (Perm => Pi, Level => K);
+         Result := (Perm => Pi, Level => K);
+         return Result;
       end if;
    end Sift_Helper;
 
@@ -131,15 +145,8 @@ package body Permutations is
       Result : Sift_Result;
       K : Index;
       J : Index;
-      Max_Count : constant Integer := Max_Size * Max_Size;
+      Next_Count : Integer;
    begin
-      -- Base case: if count is too high, terminate (safety net)
-      -- This bound ensures termination: each Enter call that adds a new transversal
-      -- increases Count by 1, and there are at most Max_Size * Max_Size possible transversals
-      if Count >= Max_Count then
-         return;
-      end if;
-
       -- Sift the permutation
       Result := Sift(Pi, Sigma);
 
@@ -158,7 +165,9 @@ package body Permutations is
 
       -- Closure step: for every existing non-empty σₓᵢ, form products
       -- σₖⱼ ∘ σₓᵢ and σₓᵢ ∘ σₖⱼ, and recursively call Enter on those products
-      -- Count + 1 is at most Max_Count because Count < Max_Count
+      -- Count + 1 is at most Max_Count because Count < Max_Count (from precondition)
+      Next_Count := Count + 1;
+      
       for X in Index loop
          pragma Loop_Invariant (for all I in Index'First .. X-1 => 
                                 (for all Y in Index => 
@@ -174,14 +183,14 @@ package body Permutations is
                declare
                   Product1 : Permutation := Multiply(Sigma(K, J).Value, Sigma(X, Y).Value);
                begin
-                  Enter_Helper(Product1, Sigma, Count + 1);
+                  Enter_Helper(Product1, Sigma, Next_Count);
                end;
 
                -- Form product: σₓᵢ ∘ σₖⱼ
                declare
                   Product2 : Permutation := Multiply(Sigma(X, Y).Value, Sigma(K, J).Value);
                begin
-                  Enter_Helper(Product2, Sigma, Count + 1);
+                  Enter_Helper(Product2, Sigma, Next_Count);
                end;
             end if;
          end loop;
