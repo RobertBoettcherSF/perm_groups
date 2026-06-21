@@ -1,39 +1,29 @@
 ------------------------------------------------------------------
 --  Permutation Groups in Ada SPARK                              --
---  Implementation of Donald E. Knuth's algorithms Aₖ(π) and Bₖ(π) --
---  for computing strong generators and transversal systems        --
+--  Implementation of Sims's Algorithm (1991)                     --
+--  Optimized elementary version from "Efficient Representation of   --
+--  Perm Groups" by Knuth, 1991                                  --
 --                                                               --
 --  File: permutations.ads                                        --
---  Description: Complete implementation with all algorithms       --
---  Version: 0.10                                              --
+--  Description: Complete implementation with Sims Filter/Sift      --
+--               and Enter algorithms                             --
+--  Version: 0.11                                              --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
---  Reference: Knuth, D.E. "The Art of Computer Programming"     --
---             Volume 2, Section 4.6.3 (Semi-invariants of a group)  --
---                                                               --
---  This package implements Knuth's algorithms for computing strong     --
---  generating sets and transversal systems of permutation groups.     --
---  All code is SPARK 2022 compatible with formal verification.        --
---                                                               --
---  Key Features:                                               --
---  - SPARK-compatible permutation vector type                  --
---  - Algorithm Aₖ(π): Appends permutation to T(k)                --
---  - Algorithm Bₖ(π): Ensures π is in Γ(k)                       --
---  - Membership testing with recursive Is_Member function        --
---  - Complete SPARK contracts (pre/post-conditions, invariants) --
+--  Reference: Knuth, D.E. "Efficient Representation of Perm Groups" --
+--             1991 (unpublished paper)                             --
 ------------------------------------------------------------------
+
+with Standard;
+use type Standard.Natural;
 
 package Permutations is
    pragma SPARK_Mode (On);
 
-   -- Maximum size for permutations (Knuth's algorithms work with finite groups)
-   -- This constant defines the upper bound for the Index type
+   -- Maximum size for permutations
+   -- Defines the upper bound for the Index type and permutation domain
    Max_Size : constant Positive := 100;
-
-   -- Maximum number of elements in any vector (for Sigma and T arrays)
-   -- This prevents unbounded memory usage in the vector implementations
-   Max_Vector_Size : constant Positive := 1000;
 
    -- Index type for permutations: maps to positions 1..Max_Size
    -- This is the domain and codomain for all permutations
@@ -43,8 +33,22 @@ package Permutations is
    -- Each permutation is represented as an array where P(I) gives the image of I
    type Permutation is array (Index) of Index;
 
-   -- Identity permutation: maps each element to itself
-   -- Postcondition: For all I in Index, Identity'Result(I) = I
+   -- Optional permutation type for the transversal system
+   -- Each σₖⱼ is either empty (Is_Present = False) or contains exactly one permutation
+   -- This replaces the heavy vector implementation with a lightweight optional type
+   type Optional_Permutation is record
+      Is_Present : Boolean := False;
+      Value : Permutation;
+   end record;
+
+   -- Sigma type: Σ(k,j) - transversal system for level k, position j
+   -- For 1 ≤ j ≤ k, Sigma(K, J) holds at most one permutation
+   -- σₖₖ is always the identity permutation
+   -- This is a 2D array of Optional_Permutation over (Index, Index)
+   type Sigma_Type is array (Index, Index) of Optional_Permutation;
+
+   -- Identity permutation
+   -- Returns the identity permutation where each element maps to itself
    function Identity return Permutation
      with SPARK_Mode => On,
           Pre => True,
@@ -52,109 +56,96 @@ package Permutations is
 
    -- Permutation multiplication (composition): Left * Right
    -- Computes the composition: (Left ∘ Right)(I) = Left(Right(I))
-   -- Note: Postcondition removed for SPARK provability - the implementation
-   -- is correct but SPARK cannot automatically prove the universal quantification
    function Multiply (Left, Right : Permutation) return Permutation
      with SPARK_Mode => On,
           Pre => (for all I in Index => Left(I) in Index and Right(I) in Index);
 
    -- Permutation inverse: computes the inverse bijection
    -- For a permutation P, Inverse(P) satisfies: P(Inverse(P)(I)) = I
-   -- Note: Postcondition removed for SPARK provability
    function Inverse (P : Permutation) return Permutation
      with SPARK_Mode => On,
           Pre => True;
 
    -- Check if a permutation is the identity
    -- Returns True if P(I) = I for all I in Index
-   -- Note: Postcondition removed for SPARK provability
    function Is_Identity (P : Permutation) return Boolean
      with SPARK_Mode => On,
-          Pre => True;
+          Pre => True,
+          Post => Is_Identity'Result = (for all I in Index => P(I) = I);
 
-   -- SPARK-compatible Vector type for storing permutations
-   -- Since Ada.Containers.Vectors is not SPARK-compatible, we use a custom
-   -- record type with a fixed-size array and a length counter
-   
-   -- Index type for vector elements (1..Max_Vector_Size)
-   type Vector_Index is range 1 .. Max_Vector_Size;
-   
-   -- Capacity type for vector length (0..Max_Vector_Size)
-   type Vector_Capacity is range 0 .. Max_Vector_Size;
-   
-   -- Fixed-size array to store permutation elements
-   type Permutation_Array is array (Vector_Index) of Permutation;
-   
-   -- Vector record: combines a length counter with the storage array
-   -- This is the SPARK-compatible alternative to Ada.Containers.Vectors
-   type Permutation_Vector is record
-      Length : Vector_Capacity := 0;  -- Current number of elements
-      Data : Permutation_Array;        -- Storage for permutation elements
+   -- Sift result type: contains the sifted permutation and the level it stopped at
+   -- Used by the Sift algorithm to return both the result and the termination level
+   type Sift_Result is record
+      Perm : Permutation;
+      Level : Index;
    end record;
 
-   -- Sigma type: Σ(k,j) - transversal system for level k, position j
-   -- Array of vectors, where Sigma(K, J) contains the transversals for
-   -- permutations mapping K to J
-   type Sigma_Type is array (Index, Index) of Permutation_Vector;
-
-   -- T type: T(k) - strong generators at level k
-   -- Array of vectors, where T(K) contains the strong generators
-   -- for the stabilizer chain at level k
-   type T_Type is array (Index) of Permutation_Vector;
-
-   -- Check if permutation Pi is a member of the group generated by Sigma up to level K
-   -- This is the recursive membership test from Knuth's Algorithm 4.6.3A
-   -- Uses Subprogram_Variant to prove termination of the recursion
-   function Is_Member (Pi : Permutation; K : Index; Sigma : Sigma_Type) return Boolean
+   -- Sift function: the core of Sims's algorithm
+   -- Finds the largest k such that j = π(k) ≠ k
+   -- If σₖⱼ is present, multiplies π by σₖⱼ⁻¹ and repeats for smaller levels
+   -- Returns the sifted permutation and the level it stopped at
+   -- If π is the identity, returns identity at level 1
+   -- Uses Subprogram_Variant to prove termination (decreasing level)
+   function Sift (Pi : Permutation; Sigma : Sigma_Type) return Sift_Result
      with SPARK_Mode => On,
-          Pre => K in Index and Pi'Length = Max_Size,
-          Subprogram_Variant => (Decreases => K);
+          Pre => Pi'Length = Max_Size;
 
-   -- Algorithm Aₖ(π): Appends a new permutation π to T(k)
-   -- From Knuth, TAOCP Vol 2, Section 4.6.3, Algorithm A
-   -- This algorithm adds π to the strong generating set and updates
-   -- the transversal system accordingly
-   procedure Algorithm_A (K : Index; Pi : Permutation;
-                         Sigma : in out Sigma_Type;
-                         T : in out T_Type)
+   -- Helper function for Sift to enable Subprogram_Variant
+   -- This is needed because SPARK requires the variant to reference a state component
+   -- Uses Current_Level as the variant measure
+   function Sift_Helper (Pi : Permutation; Sigma : Sigma_Type; Current_Level : Index) return Sift_Result
      with SPARK_Mode => On,
-          Pre => K in Index and Pi'Length = Max_Size;
+          Pre => Pi'Length = Max_Size and Current_Level in Index,
+          Subprogram_Variant => (Decreases => Current_Level);
 
-   -- Algorithm Bₖ(π): Ensures π is in Γ(k)
-   -- From Knuth, TAOCP Vol 2, Section 4.6.3, Algorithm B
-   -- This algorithm ensures that π is in the group Γ(k) by potentially
-   -- calling Algorithm Aₖ₋₁ recursively
-   procedure Algorithm_B (K : Index; Pi : Permutation;
-                         Sigma : in out Sigma_Type;
-                         T : in out T_Type)
+   -- Enter procedure: the closure step of Sims's algorithm
+   -- Passes π through Sift
+   -- If the sifted result is the identity, π is already in the group
+   -- If the sifted result is non-identity at level k (where π'(k) = j),
+   -- inserts it into the transversal: σₖⱼ ← π'
+   -- Then performs closure: for every existing non-empty σₓᵢ, forms products
+   -- σₖⱼ ∘ σₓᵢ and σₓᵢ ∘ σₖⱼ, and recursively calls Enter on those products
+   -- Uses Subprogram_Variant to prove termination via Depth parameter
+   procedure Enter (Pi : Permutation; Sigma : in out Sigma_Type)
      with SPARK_Mode => On,
-          Pre => K > 1 and Pi'Length = Max_Size;
+          Pre => Pi'Length = Max_Size;
 
-   -- Initialize the data structures for a given group size N
-   -- Sets all Sigma(K, J) and T(K) to empty vectors
-   -- Postcondition ensures all vectors are properly initialized (length = 0)
-   procedure Initialize (N : Index; Sigma : out Sigma_Type; T : out T_Type)
+   -- Helper procedure for Enter to enable Subprogram_Variant
+   -- Uses Depth as the variant measure to prove termination
+   -- Depth is bounded by Max_Size * Max_Size to prevent infinite recursion
+   procedure Enter_Helper (Pi : Permutation; Sigma : in out Sigma_Type; Depth : Natural)
      with SPARK_Mode => On,
-          Pre => N in Index,
-          Post => (for all K in Index => Vector_Length(T(K)) = 0) and
-                  (for all K in Index => (for all J in Index => Vector_Length(Sigma(K, J)) = 0));
+          Pre => Pi'Length = Max_Size and Depth <= Natural(Max_Size * Max_Size),
+          Subprogram_Variant => (Decreases => Depth);
+
+   -- Initialize the transversal system
+   -- Sets σₖₖ to the identity for all k, and all other σₖⱼ to empty
+   procedure Initialize (Sigma : out Sigma_Type)
+     with SPARK_Mode => On,
+          Post => (for all K in Index => Sigma(K, K).Is_Present and then Sigma(K, K).Value = Identity) and
+                  (for all K in Index => (for all J in Index => (if J /= K then not Sigma(K, J).Is_Present)));
+
+   -- Check if permutation Pi is a member of the group generated by Sigma
+   -- A permutation π is a member if and only if Sift(Pi, Sigma) returns the identity
+   function Is_Member (Pi : Permutation; Sigma : Sigma_Type) return Boolean
+     with SPARK_Mode => On,
+          Pre => Pi'Length = Max_Size,
+          Post => Is_Member'Result = Is_Identity(Sift(Pi, Sigma).Perm);
 
    -- Add a new generator to the group
-   -- Starts the process by calling Algorithm_B at the highest level (Index'Last)
-   procedure Add_Generator (Pi : Permutation; Sigma : in out Sigma_Type; T : in out T_Type)
+   -- Calls Enter to add the generator and maintain the strong generating set
+   procedure Add_Generator (Pi : Permutation; Sigma : in out Sigma_Type)
      with SPARK_Mode => On,
           Pre => Pi'Length = Max_Size;
 
    -- Compute the strong generating set for a given set of generators
-   -- Takes an array of generator permutations and computes the complete
-   -- strong generating set using Knuth's algorithms
+   -- Initializes Sigma and adds each generator using Add_Generator
    type Generator_Array is array (Positive range <>) of Permutation;
    
    procedure Compute_Strong_Generators (Generators : Generator_Array;
-                                        Sigma : out Sigma_Type;
-                                        T : out T_Type)
+                                        Sigma : out Sigma_Type)
      with SPARK_Mode => On,
-          Pre => Generators'Length <= Max_Vector_Size and
+          Pre => Generators'Length > 0 and
                 (for all I in Generators'Range => Generators(I)'Length = Max_Size);
 
    -- Create a transposition (swap of two elements)
@@ -179,28 +170,9 @@ package Permutations is
 
    -- Check if two permutations are equal
    -- Returns True if Left(I) = Right(I) for all I in Index
-   -- Note: Postcondition removed for SPARK provability
    function "=" (Left, Right : Permutation) return Boolean
      with SPARK_Mode => On,
-          Pre => True;
-
-   -- Helper function to get the length of a Permutation_Vector
-   -- Returns the current number of elements in the vector
-   function Vector_Length (V : Permutation_Vector) return Vector_Capacity;
-
-   -- Helper procedure to append to a Permutation_Vector
-   -- Adds Item to the end of the vector if there is space
-   procedure Vector_Append (V : in out Permutation_Vector; Item : Permutation);
-
-   -- Helper function to get element at index from Permutation_Vector
-   -- Returns the element at the given index (1-based)
-   -- Precondition ensures the index is within bounds
-   function Vector_Element (V : Permutation_Vector; Index : Positive) return Permutation
-     with SPARK_Mode => On,
-          Pre => Index > 0 and Index <= Integer(Vector_Capacity'Last) and Index <= Integer(V.Length);
-
-   -- Helper procedure to clear a Permutation_Vector
-   -- Sets the length to 0, effectively removing all elements
-   procedure Vector_Clear (V : in out Permutation_Vector);
+          Pre => True,
+          Post => "="'Result = (for all I in Index => Left(I) = Right(I));
 
 end Permutations;
