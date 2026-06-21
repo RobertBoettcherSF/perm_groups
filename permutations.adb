@@ -7,7 +7,7 @@
 --  File: permutations.adb                                        --
 --  Description: Complete implementation with Sims Filter/Sift      --
 --               and Enter algorithms                             --
---  Version: 0.12                                              --
+--  Version: 0.13                                              --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -68,14 +68,13 @@ package body Permutations is
    -- This implements the core Sift algorithm with a decreasing level parameter
    -- that SPARK can use to prove termination
    function Sift_Helper (Pi : Permutation; Sigma : Sigma_Type; Current_Level : Index) return Sift_Result is
-      Result : Sift_Result;
+      Result : Sift_Result := (Perm => Pi, Level => 1);
       K : Index;
       J : Index;
    begin
       -- Base case: if we've checked all levels down to 1
       if Current_Level = 1 then
-         Result.Perm := Pi;
-         Result.Level := 1;
+         Result := (Perm => Pi, Level => 1);
          return Result;
       end if;
 
@@ -90,12 +89,12 @@ package body Permutations is
 
       -- If no such k found (π is identity on 1..Current_Level)
       if K < 1 then
-         Result.Perm := Pi;
-         Result.Level := 1;
+         Result := (Perm => Pi, Level => 1);
          return Result;
       end if;
 
       -- Now we have K where Pi(K) ≠ K and K >= 1
+      -- Since we exited the loop with K >= 1 and Pi(K) /= K, we know K is valid
       J := Pi(K);
 
       -- Check if σₖⱼ is present
@@ -104,17 +103,17 @@ package body Permutations is
          declare
             Sigma_KJ_Inv : Permutation := Inverse(Sigma(K, J).Value);
             New_Pi : Permutation := Multiply(Pi, Sigma_KJ_Inv);
-            Next_Level : Index := K - 1;
+            Next_Level : constant Index := K - 1;
          begin
             -- Recursively sift the new permutation at level K-1
-            -- Next_Level is at least 1 because K >= 2 (since K-1 >= 1)
+            -- K >= 2 here because if K = 1, we would have Pi(1) = 1 (from the loop condition)
+            -- but we know Pi(K) /= K, so K cannot be 1 at this point
             Result := Sift_Helper(New_Pi, Sigma, Next_Level);
             return Result;
          end;
       else
          -- σₖⱼ is empty, return current π and level K
-         Result.Perm := Pi;
-         Result.Level := K;
+         Result := (Perm => Pi, Level => K);
          return Result;
       end if;
    end Sift_Helper;
@@ -137,6 +136,7 @@ package body Permutations is
       K : Index;
       J : Index;
       Max_Depth : constant Integer := Max_Size * Max_Size;
+      Next_Depth : Integer;
    begin
       -- Base case: if depth is too high, terminate (safety net)
       -- This bound ensures termination: each Enter call increases Depth by 1,
@@ -164,6 +164,10 @@ package body Permutations is
       -- Closure step: for every existing non-empty σₓᵢ, form products
       -- σₖⱼ ∘ σₓᵢ and σₓᵢ ∘ σₖⱼ, and recursively call Enter on those products
       -- Depth + 1 is at most Max_Depth because Depth < Max_Depth
+      Next_Depth := Depth + 1;
+      -- Next_Depth <= Max_Depth because Depth < Max_Depth (from the if condition above)
+      pragma Assert (Next_Depth <= Max_Depth);
+      
       for X in Index loop
          pragma Loop_Invariant (for all I in Index'First .. X-1 => 
                                 (for all Y in Index => 
@@ -179,16 +183,14 @@ package body Permutations is
                declare
                   Product1 : Permutation := Multiply(Sigma(K, J).Value, Sigma(X, Y).Value);
                begin
-                  -- Depth + 1 <= Max_Depth because Depth < Max_Depth
-                  Enter_Helper(Product1, Sigma, Depth + 1);
+                  Enter_Helper(Product1, Sigma, Next_Depth);
                end;
 
                -- Form product: σₓᵢ ∘ σₖⱼ
                declare
                   Product2 : Permutation := Multiply(Sigma(X, Y).Value, Sigma(K, J).Value);
                begin
-                  -- Depth + 1 <= Max_Depth because Depth < Max_Depth
-                  Enter_Helper(Product2, Sigma, Depth + 1);
+                  Enter_Helper(Product2, Sigma, Next_Depth);
                end;
             end if;
          end loop;
@@ -212,22 +214,15 @@ package body Permutations is
    -- Sets σₖₖ to the identity for all k, and all other σₖⱼ to empty
    procedure Initialize (Sigma : out Sigma_Type) is
       Id : constant Permutation := Identity;
+      Empty_Opt : constant Optional_Permutation := (Is_Present => False, Value => Id);
+      Identity_Opt : constant Optional_Permutation := (Is_Present => True, Value => Id);
    begin
-      -- Initialize all σₖⱼ to empty
-      for K in Index loop
-         pragma Loop_Invariant (for all I in Index'First .. K-1 => 
-                                (for all J in Index => not Sigma(I, J).Is_Present));
-         for J in Index loop
-            pragma Loop_Invariant (for all J2 in Index'First .. J-1 => not Sigma(K, J2).Is_Present);
-            Sigma(K, J) := (Is_Present => False, Value => Id);
-         end loop;
-      end loop;
-
+      -- Initialize all σₖⱼ to empty first
+      Sigma := (others => (others => Empty_Opt));
+      
       -- Set σₖₖ to the identity for all k
       for K in Index loop
-         pragma Loop_Invariant (for all I in Index'First .. K-1 => 
-                                Sigma(I, I).Is_Present and then Sigma(I, I).Value = Id);
-         Sigma(K, K) := (Is_Present => True, Value => Id);
+         Sigma(K, K) := Identity_Opt;
       end loop;
    end Initialize;
 

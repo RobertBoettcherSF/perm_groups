@@ -7,7 +7,7 @@
 --  File: permutations.ads                                        --
 --  Description: Complete implementation with Sims Filter/Sift      --
 --               and Enter algorithms                             --
---  Version: 0.12                                              --
+--  Version: 0.13                                              --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -139,8 +139,7 @@ package Permutations is
    procedure Compute_Strong_Generators (Generators : Generator_Array;
                                         Sigma : out Sigma_Type)
      with SPARK_Mode => On,
-          Pre => Generators'Length > 0 and
-                (for all Element of Generators => Element'Length = Max_Size);
+          Pre => Generators'Length > 0;
 
    -- Create a transposition (swap of two elements)
    -- Returns a permutation that swaps I and J, leaving all other elements fixed
