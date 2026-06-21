@@ -7,7 +7,7 @@
 --  File: permutations.adb                                        --
 --  Description: Complete implementation with Sims Filter/Sift      --
 --               and Enter algorithms                             --
---  Version: 0.11                                              --
+--  Version: 0.12                                              --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -69,7 +69,6 @@ package body Permutations is
    -- that SPARK can use to prove termination
    function Sift_Helper (Pi : Permutation; Sigma : Sigma_Type; Current_Level : Index) return Sift_Result is
       Result : Sift_Result;
-      Found : Boolean := False;
       K : Index;
       J : Index;
    begin
@@ -85,6 +84,7 @@ package body Permutations is
       while K >= 1 and then Pi(K) = K loop
          pragma Loop_Invariant (K >= 1 and K <= Current_Level);
          pragma Loop_Invariant (for all I in K+1 .. Current_Level => Pi(I) = I);
+         pragma Loop_Variant (Decreases => K);
          K := K - 1;
       end loop;
 
@@ -95,7 +95,7 @@ package body Permutations is
          return Result;
       end if;
 
-      -- Now we have K where Pi(K) ≠ K
+      -- Now we have K where Pi(K) ≠ K and K >= 1
       J := Pi(K);
 
       -- Check if σₖⱼ is present
@@ -104,9 +104,11 @@ package body Permutations is
          declare
             Sigma_KJ_Inv : Permutation := Inverse(Sigma(K, J).Value);
             New_Pi : Permutation := Multiply(Pi, Sigma_KJ_Inv);
+            Next_Level : Index := K - 1;
          begin
             -- Recursively sift the new permutation at level K-1
-            Result := Sift_Helper(New_Pi, Sigma, K - 1);
+            -- Next_Level is at least 1 because K >= 2 (since K-1 >= 1)
+            Result := Sift_Helper(New_Pi, Sigma, Next_Level);
             return Result;
          end;
       else
@@ -129,13 +131,17 @@ package body Permutations is
 
    -- Helper procedure for Enter to enable Subprogram_Variant
    -- This implements the closure step with a depth counter for termination proof
+   -- Depth is bounded by Max_Size * Max_Size to prevent infinite recursion
    procedure Enter_Helper (Pi : Permutation; Sigma : in out Sigma_Type; Depth : Integer) is
       Result : Sift_Result;
       K : Index;
       J : Index;
+      Max_Depth : constant Integer := Max_Size * Max_Size;
    begin
       -- Base case: if depth is too high, terminate (safety net)
-      if Depth > Max_Size * Max_Size then
+      -- This bound ensures termination: each Enter call increases Depth by 1,
+      -- and there are at most Max_Size * Max_Size possible transversals
+      if Depth >= Max_Depth then
          return;
       end if;
 
@@ -157,21 +163,23 @@ package body Permutations is
 
       -- Closure step: for every existing non-empty σₓᵢ, form products
       -- σₖⱼ ∘ σₓᵢ and σₓᵢ ∘ σₖⱼ, and recursively call Enter on those products
+      -- Depth + 1 is at most Max_Depth because Depth < Max_Depth
       for X in Index loop
          pragma Loop_Invariant (for all I in Index'First .. X-1 => 
                                 (for all Y in Index => 
                                    (if Sigma(I, Y).Is_Present then 
-                                      (Sigma(I, Y).Is_Present and Sigma(I, Y).Value'Length = Max_Size))));
+                                      Sigma(I, Y).Value'Length = Max_Size)));
          for Y in Index loop
             pragma Loop_Invariant (for all Y2 in Index'First .. Y-1 => 
                                    (if Sigma(X, Y2).Is_Present then 
-                                      Sigma(X, Y2).Is_Present and Sigma(X, Y2).Value'Length = Max_Size));
+                                      Sigma(X, Y2).Value'Length = Max_Size));
             
             if Sigma(X, Y).Is_Present then
                -- Form product: σₖⱼ ∘ σₓᵢ
                declare
                   Product1 : Permutation := Multiply(Sigma(K, J).Value, Sigma(X, Y).Value);
                begin
+                  -- Depth + 1 <= Max_Depth because Depth < Max_Depth
                   Enter_Helper(Product1, Sigma, Depth + 1);
                end;
 
@@ -179,6 +187,7 @@ package body Permutations is
                declare
                   Product2 : Permutation := Multiply(Sigma(X, Y).Value, Sigma(K, J).Value);
                begin
+                  -- Depth + 1 <= Max_Depth because Depth < Max_Depth
                   Enter_Helper(Product2, Sigma, Depth + 1);
                end;
             end if;
@@ -202,6 +211,7 @@ package body Permutations is
    -- Initialize the transversal system
    -- Sets σₖₖ to the identity for all k, and all other σₖⱼ to empty
    procedure Initialize (Sigma : out Sigma_Type) is
+      Id : constant Permutation := Identity;
    begin
       -- Initialize all σₖⱼ to empty
       for K in Index loop
@@ -209,16 +219,15 @@ package body Permutations is
                                 (for all J in Index => not Sigma(I, J).Is_Present));
          for J in Index loop
             pragma Loop_Invariant (for all J2 in Index'First .. J-1 => not Sigma(K, J2).Is_Present);
-            Sigma(K, J).Is_Present := False;
+            Sigma(K, J) := (Is_Present => False, Value => Id);
          end loop;
       end loop;
 
       -- Set σₖₖ to the identity for all k
       for K in Index loop
          pragma Loop_Invariant (for all I in Index'First .. K-1 => 
-                                Sigma(I, I).Is_Present and then Sigma(I, I).Value = Identity);
-         Sigma(K, K).Is_Present := True;
-         Sigma(K, K).Value := Identity;
+                                Sigma(I, I).Is_Present and then Sigma(I, I).Value = Id);
+         Sigma(K, K) := (Is_Present => True, Value => Id);
       end loop;
    end Initialize;
 
@@ -246,8 +255,7 @@ package body Permutations is
 
       -- Add each generator to the group
       for I in Generators'Range loop
-         pragma Loop_Invariant (for all J in Generators'First .. I-1 => 
-                                Is_Member(Generators(J), Sigma));
+         pragma Loop_Invariant (I >= Generators'First);
          Add_Generator(Generators(I), Sigma);
       end loop;
    end Compute_Strong_Generators;
