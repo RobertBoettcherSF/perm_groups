@@ -7,7 +7,7 @@
 --  File: permutations.adb                                        --
 --  Description: Complete implementation with Sims Filter/Sift      --
 --               and Enter algorithms                             --
---  Version: 0.15                                              --
+--  Version: 0.16                                              --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
@@ -72,6 +72,7 @@ package body Permutations is
       J : Index;
       Next_Level : Index;
       Result : Sift_Result;
+      Found : Boolean := False;
    begin
       -- Base case: if we've checked all levels down to 1
       if Current_Level = 1 then
@@ -90,11 +91,13 @@ package body Permutations is
       
       -- After the loop, check if K = 1 separately
       if K = 1 and then Pi(1) = 1 then
-         K := 0;  -- Mark as not found
+         Found := False;  -- Mark as not found
+      else
+         Found := True;
       end if;
 
       -- If no such k found (π is identity on 1..Current_Level)
-      if K < 1 then
+      if not Found then
          Result := (Perm => Pi, Level => 1);
          return Result;
       end if;

@@ -7,7 +7,7 @@
 --  File: permutations.ads                                        --
 --  Description: Complete implementation with Sims Filter/Sift      --
 --               and Enter algorithms                             --
---  Version: 0.15                                              --
+--  Version: 0.16                                              --
 --                                                               --
 --  Author: Vibe Code Agent                                       --
 --  Date: 2024                                                   --
